@@ -35,11 +35,11 @@ public:
     // output_to_motors - sends values out to the motors
     void output_to_motors() override;
 
-    // set_rpm - for rotor speed governor
-    void set_rpm(float rotor_rpm) override;
-
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
     void set_desired_rotor_speed(float desired_speed) override;
+	
+	//set governor output
+    void set_governor_output(float gov_output) override;
 
     // get_estimated_rotor_speed - gets estimated rotor speed as a number from 0 ~ 1000
     float get_main_rotor_speed() const  override { return _main_rotor.get_rotor_speed(); }

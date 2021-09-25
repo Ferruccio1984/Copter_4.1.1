@@ -68,6 +68,8 @@ public:
 
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
     virtual bool parameter_check(bool display_msg) const;
+	
+	void set_turb_start(bool turb_start) { _heliflags.start_engine = turb_start; }
 
     // has_flybar - returns true if we have a mechical flybar
     virtual bool has_flybar() const { return AP_MOTORS_HELI_NOFLYBAR; }
@@ -83,12 +85,12 @@ public:
 
     // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
     float get_rsc_setpoint() const { return _main_rotor._rsc_setpoint.get() * 0.01f; }
-    
-    // set_rpm - for rotor speed governor
-    virtual void set_rpm(float rotor_rpm) = 0;
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     virtual void set_desired_rotor_speed(float desired_speed) = 0;
+	
+	//set governor output
+    virtual void set_governor_output(float gov_output) = 0;
 
     // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1
     virtual float get_desired_rotor_speed() const = 0;
@@ -245,6 +247,7 @@ protected:
         uint8_t land_complete           : 1;    // true if aircraft is landed
         uint8_t takeoff_collective      : 1;    // true if collective is above 30% between H_COL_MID and H_COL_MAX
         uint8_t below_mid_collective    : 1;    // true if collective is below H_COL_MID
+		uint8_t start_engine                  : 1;
     } _heliflags;
 
     // parameters

@@ -25,7 +25,6 @@ AP_BattMonitor_FuelFlow::AP_BattMonitor_FuelFlow(AP_BattMonitor &mon,
                                                  AP_BattMonitor_Params &params) :
     AP_BattMonitor_Backend(mon, mon_state, params)
 {
-    _state.voltage = 1.0; // show a fixed voltage of 1v
 
     // we can't tell if it is healthy as we expect zero pulses when no
     // fuel is flowing
@@ -113,12 +112,15 @@ void AP_BattMonitor_FuelFlow::read()
 
     _state.last_time_micros = now_us;
 
-    // map amps to litres/hour
-    _state.current_amps = litres_pec_sec * (60*60);
+     // map amps to litres/hour
+    _state.current_amps = signal_quality_filter.apply(litres_pec_sec) * (60*60);
 
     // map consumed_mah to consumed millilitres
     _state.consumed_mah += litres * 1000;
 
     // map consumed_wh using fixed voltage of 1
     _state.consumed_wh = _state.consumed_mah;
+	
+	// voltage = litres consumed	
+	_state.voltage += litres;
 }

@@ -73,6 +73,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const aux_
     case AUX_FUNC::ATTCON_FEEDFWD:
     case AUX_FUNC::ATTCON_ACCEL_LIM:
     case AUX_FUNC::MOTOR_INTERLOCK:
+	case AUX_FUNC::TURB_START:
     case AUX_FUNC::AVOID_ADSB:
     case AUX_FUNC::PRECISION_LOITER:
     case AUX_FUNC::INVERTED:
@@ -359,6 +360,25 @@ void RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const aux_sw
             copter.ap.motor_interlock_switch = (ch_flag == HIGH || ch_flag == MIDDLE);
 #endif
             break;
+			
+			 case AUX_FUNC::TURB_START:
+#if FRAME_CONFIG == HELI_FRAME
+            
+           switch (ch_flag) {
+                case HIGH:
+                    copter.motors->set_turb_start(true);
+                    					
+                    break;
+                case MIDDLE:
+                    // nothing
+                    break;
+                case LOW:
+                    copter.motors->set_turb_start(false);	
+                    					
+                    break;
+            }		
+#endif
+         break;
 
         case AUX_FUNC::BRAKE:
 #if MODE_BRAKE_ENABLED == ENABLED

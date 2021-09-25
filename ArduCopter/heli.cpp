@@ -182,12 +182,11 @@ void Copter::heli_update_rotor_speed_targets()
             // of whether or not they actually use it
             // set rpm from rotor speed sensor
             if (motors->get_interlock()) {
-#if RPM_ENABLED == ENABLED
-                motors->set_rpm(rpm_sensor.get_rpm(0));
-#endif
+                motors->set_governor_output(copter.get_gov().get_governor_output());
                 motors->set_desired_rotor_speed(motors->get_rsc_setpoint());
             }else{
                 motors->set_desired_rotor_speed(0.0f);
+				g2.gov.governor_init();
             }
             break;
     }
@@ -225,6 +224,17 @@ void Copter::heli_update_autorotation()
 #else
     heli_flags.in_autorotation = false;
     motors->set_enable_bailout(false);
+#endif
+}
+
+void Copter::heli_update_governor()
+{
+#if GOVERNOR_ENABLED == ENABLED
+    if (!motors->get_interlock()  && !g2.gov._governor_engage) {
+        heli_flags.governor = false;
+    } else {
+        heli_flags.governor = true;
+    }
 #endif
 }
 

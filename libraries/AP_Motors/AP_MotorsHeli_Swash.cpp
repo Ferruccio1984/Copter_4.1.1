@@ -170,14 +170,14 @@ void AP_MotorsHeli_Swash::calculate_roll_pitch_collective_factors()
         // four-servo roll/pitch mixer for H4-45
         // 1:1 pure input style, phase angle not adjustable
         // for 45 deg plates servos 1&2 are LF&RF, 3&7 are LR&RR.
-        _rollFactor[CH_1] = 0.707107f; 
+        _rollFactor[CH_1] = 0; 
         _rollFactor[CH_2] = -0.707107f;
         _rollFactor[CH_3] = 0.707107f;
-        _rollFactor[CH_4] = -0.707107f;
+        _rollFactor[CH_4] = -0;
         _pitchFactor[CH_1] = 0.707107f;
-        _pitchFactor[CH_2] = 0.707107f;
-        _pitchFactor[CH_3] = -0.707f;
-        _pitchFactor[CH_4] = -0.707f;
+        _pitchFactor[CH_2] = 0;
+        _pitchFactor[CH_3] = 0;
+        _pitchFactor[CH_4] = -0.707107f;
     } else {
         // CCPM mixing not being used, so H1 straight outputs
         _rollFactor[CH_1] = 1;

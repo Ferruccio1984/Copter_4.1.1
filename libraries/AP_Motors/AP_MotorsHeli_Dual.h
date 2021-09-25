@@ -54,11 +54,11 @@ public:
     // output_to_motors - sends values out to the motors
     void output_to_motors() override;
 
-    // set_rpm - for rotor speed governor
-    void set_rpm(float rotor_rpm) override;
-
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1000
     void set_desired_rotor_speed(float desired_speed) override;
+	
+	//set governor output
+    void set_governor_output(float gov_output) override;
 
     // get_estimated_rotor_speed - gets estimated rotor speed as a number from 0 ~ 1000
     float get_main_rotor_speed() const  override { return _main_rotor.get_rotor_speed(); }
@@ -133,7 +133,6 @@ protected:
     AP_Float        _dcp_scaler;                    // scaling factor applied to the differential-collective-pitch
     AP_Float        _dcp_yaw_effect;                // feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
     AP_Float        _yaw_scaler;                    // scaling factor applied to the yaw mixing
-    AP_Float        _dcp_trim;                      // used to easily trim dcp axis
 
     // internal variables
     float           _collective2_mid_pct = 0.0f;      // collective mid parameter value for rear swashplate converted to 0 ~ 1 range

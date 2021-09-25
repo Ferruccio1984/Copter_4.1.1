@@ -96,10 +96,10 @@ void AP_MotorsHeli_Quad::set_desired_rotor_speed(float desired_speed)
     _main_rotor.set_desired_speed(desired_speed);
 }
 
-// set_rotor_rpm - used for governor with speed sensor
-void AP_MotorsHeli_Quad::set_rpm(float rotor_rpm)
+void AP_MotorsHeli_Quad::set_governor_output(float gov_output)
 {
-    _main_rotor.set_rotor_rpm(rotor_rpm);
+    _main_rotor.set_governor_output(gov_output);
+
 }
 
 // calculate_armed_scalars
@@ -210,6 +210,9 @@ void AP_MotorsHeli_Quad::update_motor_control(RotorControlState state)
 void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float collective_in, float yaw_out)
 {
     // initialize limits flag
+    limit.roll = false;
+    limit.pitch = false;
+    limit.yaw = false;
     limit.throttle_lower = false;
     limit.throttle_upper = false;
 
@@ -229,16 +232,6 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
         collective_out = _collective_mid_pct;
         limit.throttle_lower = true;
     }
-
-    // updates below mid collective flag
-    if (collective_out <= _collective_mid_pct) {
-        _heliflags.below_mid_collective = true;
-    } else {
-        _heliflags.below_mid_collective = false;
-    }
-
-    // updates takeoff collective flag based on 50% hover collective
-    update_takeoff_collective_flag(collective_out);
 
     float collective_range = (_collective_max - _collective_min) * 0.001f;
 

@@ -26,12 +26,6 @@
 #define AP_MOTORS_HELI_RSC_THRCRV_75_DEFAULT    50
 #define AP_MOTORS_HELI_RSC_THRCRV_100_DEFAULT   100
 
-// RSC governor defaults
-#define AP_MOTORS_HELI_RSC_GOVERNOR_SETPNT_DEFAULT    1500
-#define AP_MOTORS_HELI_RSC_GOVERNOR_DISENGAGE_DEFAULT 25
-#define AP_MOTORS_HELI_RSC_GOVERNOR_DROOP_DEFAULT     30
-#define AP_MOTORS_HELI_RSC_GOVERNOR_TCGAIN_DEFAULT    90
-#define AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT     100
 
 // rotor controller states
 enum RotorControlState {
@@ -81,26 +75,26 @@ public:
     // set_idle_output
     void        set_idle_output(float idle_output) { _idle_output = idle_output; }
 
-    // set rotor speed governor parameters
-    void        set_governor_output(float governor_output) {_governor_output = governor_output; }
-
     // get_desired_speed
     float       get_desired_speed() const { return _desired_speed; }
+	
+	// set governor output
+    void        set_governor_output(float gov_output) { _governor_output = gov_output; }
 
     // set_desired_speed - this requires input to be 0-1
     void        set_desired_speed(float desired_speed) { _desired_speed = desired_speed; }
 
     // get_control_speed
-    float       get_control_output() const { return _control_output; }
+    float       get_control_output() const { return _throttle_output; }
 
     // get_rotor_speed - estimated rotor speed when no governor or rpm sensor is used
     float       get_rotor_speed() const;
     
     // set_rotor_rpm - when speed sensor is available for governor
     void        set_rotor_rpm(float rotor_rpm) {_rotor_rpm = (float)rotor_rpm; }
-    
-    // get_governor_output
-    float       get_governor_output() const { return _governor_output; }
+	
+	// get_governor_output
+    float       get_governor_output() const { return (_throttle_output + _governor_output); }
 
     // is_runup_complete
     bool        is_runup_complete() const { return _runup_complete; }
@@ -122,6 +116,9 @@ public:
 
     // output - update value to send to ESC/Servo
     void        output(RotorControlState state);
+	
+	// turbine start initialize sequence
+	void        set_turbine_start(bool turbine_start) {_turbine_start = (bool)turbine_start; }
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -152,8 +149,10 @@ private:
     float           _collective_in;               // collective in for throttle curve calculation, range 0-1.0f
     float           _rotor_rpm;                   // rotor rpm from speed sensor for governor
     float           _governor_output;             // governor output for rotor speed control
-    bool            _governor_engage;             // RSC governor status flag for soft-start
     bool            _use_bailout_ramp;            // true if allowing RSC to quickly ramp up engine
+	bool           _turbine_start;
+	bool           _starting;
+	float          _throttle_output;
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);
@@ -170,18 +169,10 @@ private:
     // parameters
     AP_Int16        _power_slewrate;          // throttle slew rate (percentage per second)
     AP_Int16        _thrcrv[5];               // throttle value sent to throttle servo at 0, 25, 50, 75 and 100 percent collective
-    AP_Int16        _governor_reference;      // sets rotor speed for governor
-    AP_Float        _governor_range;          // RPM range +/- governor rpm reference setting where governor is operational
-    AP_Float        _governor_disengage;      // sets the throttle percent where the governor disengages for return to flight idle
-    AP_Float        _governor_droop_response; // governor response to droop under load
-    AP_Float        _governor_tcgain;       // governor throttle curve weighting, range 50-100%
-
-    // parameter accessors to allow conversions
+	
+	// parameter accessors to allow conversions
     float       get_critical_speed() const { return _critical_speed * 0.01; }
     float       get_idle_output() { return _idle_output * 0.01; }
-    float       get_governor_disengage() { return _governor_disengage * 0.01; }
-    float       get_governor_droop_response() { return _governor_droop_response * 0.01; }
-    float       get_governor_tcgain() { return _governor_tcgain * 0.01; }
 
 };
 

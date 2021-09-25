@@ -259,10 +259,11 @@ void AP_MotorsHeli_Single::set_desired_rotor_speed(float desired_speed)
     _tail_rotor.set_desired_speed(_direct_drive_tailspeed*0.01f);
 }
 
-// set_rotor_rpm - used for governor with speed sensor
-void AP_MotorsHeli_Single::set_rpm(float rotor_rpm)
+// set governor output from governor library
+void AP_MotorsHeli_Single::set_governor_output(float gov_output)
 {
-    _main_rotor.set_rotor_rpm(rotor_rpm);
+    _main_rotor.set_governor_output(gov_output);
+
 }
 
 // calculate_scalars - recalculates various scalers used.
@@ -287,6 +288,12 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
     // set bailout ramp time
     _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
     _tail_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
+	
+	if (_heliflags.start_engine) {
+        _main_rotor.set_turbine_start(true);
+    } else {
+        _main_rotor.set_turbine_start(false);
+    }
 }
 
 // calculate_scalars - recalculates various scalers used.

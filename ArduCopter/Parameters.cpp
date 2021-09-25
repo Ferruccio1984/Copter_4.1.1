@@ -961,6 +961,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(arot, "AROT_", 37, ParametersG2, AC_Autorotation),
 #endif
 
+#if GOVERNOR_ENABLED == ENABLED
+    // @Group: GOV_
+    // @Path: ../libraries/AC_Governor/AC_Governor.cpp
+    AP_SUBGROUPINFO(gov, "GOV_", 38, ParametersG2, AC_Governor),
+#endif
+
 
 
     AP_GROUPEND
@@ -1051,6 +1057,9 @@ ParametersG2::ParametersG2(void)
 #endif
 #if MODE_AUTOROTATE_ENABLED == ENABLED
     ,arot(copter.inertial_nav)
+#endif
+#if GOVERNOR_ENABLED == ENABLED
+    ,gov()
 #endif
 {
     AP_Param::setup_object_defaults(this, var_info);

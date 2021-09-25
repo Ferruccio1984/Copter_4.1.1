@@ -2,6 +2,7 @@
 
 #include "AP_BattMonitor.h"
 #include "AP_BattMonitor_Backend.h"
+#include <Filter/Filter.h>
 
 class AP_BattMonitor_FuelFlow : public AP_BattMonitor_Backend
 {
@@ -29,6 +30,6 @@ private:
         uint32_t total_us;
         uint32_t last_pulse_us;
     } irq_state;
-
+    ModeFilterFloat_Size5 signal_quality_filter {3};
     int8_t last_pin = -1;
 };

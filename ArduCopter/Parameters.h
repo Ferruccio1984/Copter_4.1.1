@@ -620,6 +620,11 @@ public:
     // Autonmous autorotation
     AC_Autorotation arot;
 #endif
+
+#if GOVERNOR_ENABLED == ENABLED
+    // Governor
+    AC_Governor gov;
+#endif
 };
 
 extern const AP_Param::Info        var_info[];
