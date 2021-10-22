@@ -103,10 +103,10 @@ void AP_MotorsHeli_Quad::set_desired_rotor_speed(float desired_speed)
     _main_rotor.set_desired_speed(desired_speed);
 }
 
-// set_rotor_rpm - used for governor with speed sensor
-void AP_MotorsHeli_Quad::set_rpm(float rotor_rpm)
+// set_governor_output
+void AP_MotorsHeli_Quad::set_governor_output(float gov_output)
 {
-    _main_rotor.set_rotor_rpm(rotor_rpm);
+    _main_rotor.set_governor_output(gov_output);
 }
 
 // calculate_armed_scalars

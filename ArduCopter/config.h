@@ -208,6 +208,11 @@
  # define GRIPPER_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
+// Governor
+#ifndef GOVERNOR_ENABLED
+   # define GOVERNOR_ENABLED !HAL_MINIMIZE_FEATURES
+ #endif
+
 //////////////////////////////////////////////////////////////////////////////
 // winch support
 #ifndef WINCH_ENABLED

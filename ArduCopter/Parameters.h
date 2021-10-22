@@ -616,6 +616,11 @@ public:
     AC_Autorotation arot;
 #endif
 
+#if GOVERNOR_ENABLED == ENABLED
+    // Governor
+    AC_Governor gov;
+#endif
+
 #if MODE_ZIGZAG_ENABLED == ENABLED
     // we need a pointer to the mode for the G2 table
     void *mode_zigzag_ptr;

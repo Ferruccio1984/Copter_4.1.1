@@ -176,16 +176,17 @@ void Copter::heli_update_rotor_speed_targets()
             // pass setpoint through as desired rotor speed. Needs work, this is pointless as it is
             // not used by closed loop control. Being used as a catch-all for other modes regardless
             // of whether or not they actually use it
-            // set rpm from rotor speed sensor
+            // set governor output
             if (motors->get_interlock()) {
-#if RPM_ENABLED == ENABLED
-                float rpm = -1;
-                rpm_sensor.get_rpm(0, rpm);
-                motors->set_rpm(rpm);
+#if GOVERNOR_ENABLED == ENABLED
+               motors->set_governor_output(g2.gov.get_governor_output());
 #endif
                 motors->set_desired_rotor_speed(motors->get_rsc_setpoint());
             }else{
                 motors->set_desired_rotor_speed(0.0f);
+#if GOVERNOR_ENABLED == ENABLED				
+				g2.gov.governor_init();
+#endif
             }
             break;
     }
@@ -197,6 +198,18 @@ void Copter::heli_update_rotor_speed_targets()
         AP::logger().Write_Event(LogEvent::ROTOR_SPEED_BELOW_CRITICAL);
     }
     rotor_runup_complete_last = motors->rotor_runup_complete();
+}
+
+//update governor flag
+void Copter::heli_update_governor()
+{
+#if GOVERNOR_ENABLED == ENABLED
+    if (!motors->get_interlock()  && !g2.gov._governor_engage) {
+        heli_flags.governor = false;
+    } else {
+        heli_flags.governor = true;
+    }
+#endif
 }
 
 

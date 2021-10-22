@@ -239,6 +239,9 @@ void Copter::fast_loop()
     #if MODE_AUTOROTATE_ENABLED == ENABLED
         heli_update_autorotation();
     #endif
+	#if GOVERNOR_ENABLED == ENABLED
+        heli_update_governor();
+    #endif
 #endif //HELI_FRAME
 
     // Inertial Nav
