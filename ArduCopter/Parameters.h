@@ -610,6 +610,11 @@ public:
 
     // Failsafe options bitmask #36
     AP_Int32 fs_options;
+	
+#if GOVERNOR_ENABLED == ENABLED
+    // Governor
+    AC_Governor gov;
+#endif
 
 #if MODE_AUTOROTATE_ENABLED == ENABLED
     // Autonmous autorotation

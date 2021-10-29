@@ -989,10 +989,16 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(arot, "AROT_", 37, ParametersG2, AC_Autorotation),
 #endif
 
+#if GOVERNOR_ENABLED == ENABLED
+    // @Group: GOV_
+    // @Path: ../libraries/AC_Governor/AC_Governor.cpp
+    AP_SUBGROUPINFO(gov, "GOV_", 38, ParametersG2, AC_Governor),
+#endif
+
 #if MODE_ZIGZAG_ENABLED == ENABLED
     // @Group: ZIGZ_
     // @Path: mode_zigzag.cpp
-    AP_SUBGROUPPTR(mode_zigzag_ptr, "ZIGZ_", 38, ParametersG2, ModeZigZag),
+    AP_SUBGROUPPTR(mode_zigzag_ptr, "ZIGZ_", 39, ParametersG2, ModeZigZag),
 #endif
 
 #if MODE_ACRO_ENABLED == ENABLED
@@ -1001,7 +1007,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: A range of options that can be applied to change acro mode behaviour. Air-mode enables ATC_THR_MIX_MAN at all times (air-mode has no effect on helicopters). Rate Loop Only disables the use of angle stabilization and uses angular rate stabilization only.
     // @Bitmask: 0:Air-mode,1:Rate Loop Only
     // @User: Advanced
-    AP_GROUPINFO("ACRO_OPTIONS", 39, ParametersG2, acro_options, 0),
+    AP_GROUPINFO("ACRO_OPTIONS", 40, ParametersG2, acro_options, 0),
 #endif
 
 #if MODE_AUTO_ENABLED == ENABLED
@@ -1010,7 +1016,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: A range of options that can be applied to change auto mode behaviour. Allow Arming allows the copter to be armed in Auto. Allow Takeoff Without Raising Throttle allows takeoff without the pilot having to raise the throttle. Ignore pilot yaw overrides the pilot's yaw stick being used while in auto.
     // @Bitmask: 0:Allow Arming,1:Allow Takeoff Without Raising Throttle,2:Ignore pilot yaw
     // @User: Advanced
-    AP_GROUPINFO("AUTO_OPTIONS", 40, ParametersG2, auto_options, 0),
+    AP_GROUPINFO("AUTO_OPTIONS", 41, ParametersG2, auto_options, 0),
 #endif
 
 #if MODE_GUIDED_ENABLED == ENABLED
@@ -1019,7 +1025,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: Options that can be applied to change guided mode behaviour
     // @Bitmask: 0:Allow Arming from Transmitter,2:Ignore pilot yaw,3:SetAttitudeTarget interprets Thrust As Thrust,4:Do not stabilize PositionXY,5:Do not stabilize VelocityXY,6:Waypoint navigation used for position targets
     // @User: Advanced
-    AP_GROUPINFO("GUID_OPTIONS", 41, ParametersG2, guided_options, 0),
+    AP_GROUPINFO("GUID_OPTIONS", 42, ParametersG2, guided_options, 0),
 #endif
 
     // @Param: FS_GCS_TIMEOUT
@@ -1029,7 +1035,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: 2 120
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("FS_GCS_TIMEOUT", 42, ParametersG2, fs_gcs_timeout, 5),
+    AP_GROUPINFO("FS_GCS_TIMEOUT", 43, ParametersG2, fs_gcs_timeout, 5),
 
 #if MODE_RTL_ENABLED == ENABLED
     // @Param: RTL_OPTIONS
@@ -1037,7 +1043,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: Options that can be applied to change RTL mode behaviour
     // @Bitmask: 2:Ignore pilot yaw
     // @User: Advanced
-    AP_GROUPINFO("RTL_OPTIONS", 43, ParametersG2, rtl_options, 0),
+    AP_GROUPINFO("RTL_OPTIONS", 44, ParametersG2, rtl_options, 0),
 #endif
 
     // @Param: FLIGHT_OPTIONS
@@ -1045,7 +1051,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: Flight mode specific options
     // @Bitmask: 0:Disable thrust loss check, 1:Disable yaw imbalance warning
     // @User: Advanced
-    AP_GROUPINFO("FLIGHT_OPTIONS", 44, ParametersG2, flight_options, 0),
+    AP_GROUPINFO("FLIGHT_OPTIONS", 45, ParametersG2, flight_options, 0),
 
 #if RANGEFINDER_ENABLED == ENABLED
     // @Param: RNGFND_FILT
@@ -1056,7 +1062,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Increment: 0.05
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("RNGFND_FILT", 45, ParametersG2, rangefinder_filt, RANGEFINDER_FILT_DEFAULT),
+    AP_GROUPINFO("RNGFND_FILT", 46, ParametersG2, rangefinder_filt, RANGEFINDER_FILT_DEFAULT),
 #endif
 
 #if MODE_GUIDED_ENABLED == ENABLED
@@ -1066,7 +1072,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Units: s
     // @Range: 0.1 5
     // @User: Advanced
-    AP_GROUPINFO("GUID_TIMEOUT", 46, ParametersG2, guided_timeout, 3.0),
+    AP_GROUPINFO("GUID_TIMEOUT", 47, ParametersG2, guided_timeout, 3.0),
 #endif
 
     AP_GROUPEND
