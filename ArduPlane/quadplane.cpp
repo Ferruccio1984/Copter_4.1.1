@@ -981,9 +981,10 @@ void QuadPlane::get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_o
     roll_out_cd = plane.channel_roll->get_control_in();
     pitch_out_cd = plane.channel_pitch->get_control_in();
 
-    // limit max lean angle, always allow for 10 degrees
-    angle_limit_cd = constrain_float(angle_limit_cd, 1000.0f, angle_max_cd);
-
+   float vario = get_pilot_desired_climb_rate_cms();
+    
+    angle_limit_cd=linear_interpolate(500.0f, plane.quadplane.aparm.angle_max ,vario ,-plane.quadplane.pilot_velocity_z_max_dn , plane.quadplane.pilot_velocity_z_max_up);
+   
     // scale roll and pitch inputs to ANGLE_MAX parameter range
     float scaler = angle_max_cd/4500.0;
     roll_out_cd *= scaler;
