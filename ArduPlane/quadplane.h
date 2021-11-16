@@ -75,6 +75,7 @@ public:
     void takeoff_controller(void);
     void waypoint_controller(void);
     void update_land_positioning(void);
+	
 
     void update_throttle_mix(void);
     
@@ -235,6 +236,8 @@ private:
     float get_pilot_throttle(void);
     void control_hover(void);
     void relax_attitude_control();
+	
+	float get_angle_limit(void);
 
     bool check_land_complete(void);
     bool land_detector(uint32_t timeout_ms);
@@ -406,6 +409,8 @@ private:
 
     // time we last set the loiter target
     uint32_t last_loiter_ms;
+	
+	float angle_limit;
 
     enum position_control_state {
         QPOS_NONE = 0,

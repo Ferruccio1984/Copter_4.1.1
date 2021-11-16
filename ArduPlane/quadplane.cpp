@@ -2324,8 +2324,9 @@ void QuadPlane::vtol_position_controller(void)
         run_xy_controller();
 
         // nav roll and pitch are controller by position controller
-        plane.nav_roll_cd = pos_control->get_roll_cd();
-        plane.nav_pitch_cd = pos_control->get_pitch_cd();
+        get_angle_limit();
+		plane.nav_roll_cd = constrain_float(pos_control->get_roll_cd(), -angle_limit, angle_limit);
+       	plane.nav_pitch_cd =constrain_float( pos_control->get_pitch_cd(), -angle_limit, angle_limit);
 
         if (!tailsitter.enabled()) {
             /*
@@ -2397,9 +2398,9 @@ void QuadPlane::vtol_position_controller(void)
         run_xy_controller();
 
         // nav roll and pitch are controlled by position controller
-        plane.nav_roll_cd = pos_control->get_roll_cd();
-        plane.nav_pitch_cd = pos_control->get_pitch_cd();
-
+        get_angle_limit();
+        plane.nav_roll_cd = constrain_float(pos_control->get_roll_cd(), -angle_limit, angle_limit);
+       	plane.nav_pitch_cd =constrain_float( pos_control->get_pitch_cd(), -angle_limit, angle_limit);
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
@@ -2407,7 +2408,7 @@ void QuadPlane::vtol_position_controller(void)
         break;
     }
 
-    case QPOS_LAND_FINAL:
+    case QPOS_LAND_FINAL: {
         update_land_positioning();
 
         // relax when close to the ground
@@ -2422,18 +2423,19 @@ void QuadPlane::vtol_position_controller(void)
         run_xy_controller();
 
         // nav roll and pitch are controller by position controller
-        plane.nav_roll_cd = pos_control->get_roll_cd();
-        plane.nav_pitch_cd = pos_control->get_pitch_cd();
-
+        get_angle_limit(); 
+        plane.nav_roll_cd = constrain_float(pos_control->get_roll_cd(), -angle_limit, angle_limit);
+       	plane.nav_pitch_cd =constrain_float( pos_control->get_pitch_cd(), -angle_limit, angle_limit);
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
                                                                       get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
         break;
-
-    case QPOS_LAND_COMPLETE:
+        }
+    case QPOS_LAND_COMPLETE:{
         // nothing to do
         break;
+		 }
     }
 
     // now height control
@@ -2555,6 +2557,23 @@ float QuadPlane::get_scaled_wp_speed(float target_bearing_deg) const
         return wp_speed / speed_reduction;
     }
     return wp_speed;
+}
+
+float QuadPlane:: get_angle_limit(void)
+{
+	   float thr_out = plane.quadplane.motors->get_throttle();
+       float thr_hvr = plane.quadplane.motors->get_throttle_hover();
+	      
+       
+       if(thr_out < thr_hvr) {
+		angle_limit = linear_interpolate(0.0f*plane.quadplane.aparm.angle_max, 0.35f*plane.quadplane.aparm.angle_max, thr_out, 0.0f, thr_hvr);
+				
+		 }else{
+          angle_limit = linear_interpolate(0.35f*plane.quadplane.aparm.angle_max, 1.0f*plane.quadplane.aparm.angle_max, thr_out, thr_hvr, 1.0f);
+		
+		}	
+   
+    return angle_limit;
 }
 
 /*
