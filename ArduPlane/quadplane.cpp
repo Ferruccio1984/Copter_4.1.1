@@ -2561,18 +2561,9 @@ float QuadPlane::get_scaled_wp_speed(float target_bearing_deg) const
 
 float QuadPlane:: get_angle_limit(void)
 {
-	   float thr_out = plane.quadplane.motors->get_throttle();
-       float thr_hvr = plane.quadplane.motors->get_throttle_hover();
-	      
-       
-       if(thr_out < thr_hvr) {
-		angle_limit = linear_interpolate(0.0f*plane.quadplane.aparm.angle_max, 0.35f*plane.quadplane.aparm.angle_max, thr_out, 0.0f, thr_hvr);
-				
-		 }else{
-          angle_limit = linear_interpolate(0.35f*plane.quadplane.aparm.angle_max, 1.0f*plane.quadplane.aparm.angle_max, thr_out, thr_hvr, 1.0f);
-		
-		}	
-   
+	  float thr_out = plane.quadplane.motors->get_throttle();
+	  float alpha = 0.8f;
+      angle_limit = linear_interpolate(0.0f, plane.quadplane.aparm.angle_max,  expo_curve(alpha, thr_out), 0.0f, 1.0f);
     return angle_limit;
 }
 

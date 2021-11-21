@@ -54,6 +54,7 @@ void ModeQStabilize::run()
 // set the desired roll and pitch for a tailsitter
 void ModeQStabilize::set_tailsitter_roll_pitch(const float roll_input, const float pitch_input)
 {
+	
     // separate limit for roll, if set
     if (plane.quadplane.tailsitter.max_roll_angle > 0) {
         // roll param is in degrees not centidegrees
