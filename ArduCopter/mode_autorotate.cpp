@@ -60,6 +60,7 @@ bool ModeAutorotate::init(bool ignore_checks)
     _flags.bail_out_initial = 1;
     _msg_flags.bad_rpm = true;
 	initial_energy_check =1;
+	g2.arot._using_rfnd = false;
 
     // Setting default starting switches
     phase_switch = Autorotation_Phase::ENTRY;

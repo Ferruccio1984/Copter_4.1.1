@@ -339,7 +339,7 @@ void AC_Autorotation::Log_Write_Autorotation(void) const
 
     //Write to data flash log
     AP::logger().WriteStreaming("AROT",
-                       "TimeUS,P,hs_e,C_Out,FFCol,SpdF,DH,p,ff,AccO,AccT,PitT,DV",
+                       "TimeUS,P,hs_e,C_Out,FFCol,SpdF,DH,p,ff,AccO,AccT,PitT,Hest",
                          "Qffffffffffff",
                         AP_HAL::micros64(),
                         (double)_p_term_hs,
@@ -347,13 +347,13 @@ void AC_Autorotation::Log_Write_Autorotation(void) const
                         (double)_collective_out,
                         (double)_ff_term_hs,
                         (double)(_speed_forward*0.01f),
-                        (double)_cmd_vel,
+                        (double)(_cmd_vel*0.01f),
                         (double)_vel_p,
                         (double)_vel_ff,
                         (double)_accel_out,
                         (double)_accel_target,
                         (double)_pitch_target,
-						(double)(_desired_sink_rate*0.01f)) ;
+						(double)(_est_alt*0.01f)) ;
 }
 
 
@@ -495,13 +495,18 @@ void AC_Autorotation::flare_controller()
 
 void AC_Autorotation::touchdown_controller()
 {
-	float _current_sink_rate = _inav.get_velocity_z_up_cms();		
-   _desired_sink_rate = linear_interpolate(0.0f, _entry_sink_rate, _est_alt, _ground_clearance, _entry_alt);
-    _collective_out =  constrain_value((_p_coll_tch.get_p(_desired_sink_rate - _current_sink_rate))*0.01f + _ff_term_hs, 0.0f, 1.0f);
-	col_trim_lpf.set_cutoff_frequency(_col_cutoff_freq);
-	_ff_term_hs = col_trim_lpf.apply(_collective_out, _dt);
-    set_collective(HS_CONTROLLER_COLLECTIVE_CUTOFF_FREQ);	 
-	_pitch_target = 0.0f;
+	 //float _current_sink_rate = _inav.get_velocity_z_up_cms();
+	     if((_est_alt)>=_ground_clearance){
+	             _desired_sink_rate = linear_interpolate(0.0f, _entry_sink_rate, _est_alt, _ground_clearance, _entry_alt);
+	    }else{
+	            _desired_sink_rate = 0.0f;
+	    }
+
+	    _collective_out =  constrain_value((_p_coll_tch.get_p(_desired_sink_rate - _descent_rate_filtered))*0.01f + _ff_term_hs, 0.0f, 1.0f);
+	    col_trim_lpf.set_cutoff_frequency(_col_cutoff_freq);
+	    _ff_term_hs = col_trim_lpf.apply(_collective_out, _dt);
+	    set_collective(HS_CONTROLLER_COLLECTIVE_CUTOFF_FREQ);
+	    _pitch_target *= 0.95f;
 }
 
 void AC_Autorotation::get_entry_speed()
