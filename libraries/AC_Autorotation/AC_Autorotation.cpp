@@ -339,7 +339,7 @@ void AC_Autorotation::Log_Write_Autorotation(void) const
 
     //Write to data flash log
     AP::logger().WriteStreaming("AROT",
-                       "TimeUS,P,hs_e,C_Out,FFCol,SpdF,DH,p,ff,AccO,AccT,PitT,Hest",
+                       "TimeUS,P,hs_e,C_Out,FFCol,SpdF,DH,p,ff,AccO,AccT,Rfnd,Hest",
                          "Qffffffffffff",
                         AP_HAL::micros64(),
                         (double)_p_term_hs,
@@ -352,7 +352,7 @@ void AC_Autorotation::Log_Write_Autorotation(void) const
                         (double)_vel_ff,
                         (double)_accel_out,
                         (double)_accel_target,
-                        (double)_pitch_target,
+                        (double)(_radar_alt*0.01f),
 						(double)(_est_alt*0.01f)) ;
 }
 
@@ -457,7 +457,7 @@ void AC_Autorotation::flare_controller()
     _speed_forward = calc_speed_forward(); //(cm/s)
     _delta_speed_fwd = _speed_forward - _speed_forward_last; //(cm/s)
     _speed_forward_last = _speed_forward; //(cm/s)
-    _desired_speed = linear_interpolate(0.0f, _flare_entry_speed, _est_alt, -(_inav.get_velocity_z_up_cms()*_param_time_to_ground), _param_flr_alt);
+    _desired_speed = linear_interpolate(0.0f, _flare_entry_speed, _est_alt, -(_descent_rate_filtered*_param_time_to_ground), _param_flr_alt);
 
 	// get p
 	_vel_p = _p_fw_vel.get_p(_desired_speed - _speed_forward);
@@ -496,7 +496,7 @@ void AC_Autorotation::flare_controller()
 void AC_Autorotation::touchdown_controller()
 {
 	 //float _current_sink_rate = _inav.get_velocity_z_up_cms();
-	     if((_est_alt)>=_ground_clearance){
+	     if(_est_alt>=_ground_clearance){
 	             _desired_sink_rate = linear_interpolate(0.0f, _entry_sink_rate, _est_alt, _ground_clearance, _entry_alt);
 	    }else{
 	            _desired_sink_rate = 0.0f;
@@ -517,7 +517,7 @@ void AC_Autorotation::get_entry_speed()
 void AC_Autorotation::time_to_ground()		
 {
    if(_inav.get_velocity_z_up_cms() < 0.0f ) {
-			_time_to_ground = -(_radar_alt/_inav.get_velocity_z_up_cms()); 
+			_time_to_ground = -(_radar_alt/_inav.get_velocity_z_up_cms());
 	    }else {
 	    	_time_to_ground = _param_time_to_ground +1.0f; 	
 		}	
@@ -550,7 +550,7 @@ void AC_Autorotation::update_est_radar_alt()
         // determine the error between a calculated radar altitude based on each update at 20 hz and the estimated update
         float alt_error = _radar_alt_calc - _est_alt;
         // drive the estimated altitude to the actual altitude with a proportional altitude error feedback
-        float descent_rate_corr = _inav.get_velocity_z_up_cms() + alt_error * 2.0f;
+        float descent_rate_corr = _inav.get_velocity_z_up_cms() + alt_error * 3.0f;
         // update descent rate filter
         _descent_rate_filtered = descent_rate_lpf.apply(descent_rate_corr);
         _est_alt += (_descent_rate_filtered * _dt);
