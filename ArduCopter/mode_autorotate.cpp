@@ -127,7 +127,7 @@ void ModeAutorotate::run()
     float alt = g2.arot.get_ground_distance();
     // have autorotation library update estimated radar altitude
     g2.arot.update_est_radar_alt();
-    if(alt < 4800){
+    if(alt < copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)){
         g2.arot._using_rfnd = true;
     }else{
         g2.arot._using_rfnd = false;
