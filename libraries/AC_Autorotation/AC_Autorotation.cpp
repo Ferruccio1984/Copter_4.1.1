@@ -339,7 +339,7 @@ void AC_Autorotation::Log_Write_Autorotation(void) const
 
     //Write to data flash log
     AP::logger().WriteStreaming("AROT",
-                       "TimeUS,P,hs_e,C_Out,FFCol,SpdF,DH,p,ff,AccO,AccT,Rfnd,Hest",
+                       "TimeUS,P,hs_e,C_Out,FFCol,SpdF,DH,p,ff,AccO,DesV,Rfnd,Hest",
                          "Qffffffffffff",
                         AP_HAL::micros64(),
                         (double)_p_term_hs,
@@ -351,7 +351,7 @@ void AC_Autorotation::Log_Write_Autorotation(void) const
                         (double)_vel_p,
                         (double)_vel_ff,
                         (double)_accel_out,
-                        (double)_accel_target,
+                        (double)_desired_sink_rate,
                         (double)(_radar_alt*0.01f),
 						(double)(_est_alt*0.01f)) ;
 }
