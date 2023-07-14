@@ -61,6 +61,7 @@ bool ModeAutorotate::init(bool ignore_checks)
     _msg_flags.bad_rpm = true;
 	initial_energy_check =1;
 	g2.arot._using_rfnd = false;
+	g2.arot._flare_complete = false;
 
     // Setting default starting switches
     phase_switch = Autorotation_Phase::ENTRY;
@@ -278,7 +279,6 @@ void ModeAutorotate::run()
                 _target_head_speed = HEAD_SPEED_TARGET_RATIO;  //Ensure target hs is set to glide incase hs has not reached target for glide
                 g2.arot.set_target_head_speed(_target_head_speed);
                 g2.arot.get_entry_speed();
-
                 // Prevent running the initial flare functions again
                 _flags.flare_initial = 0;
             }
