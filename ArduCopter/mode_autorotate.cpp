@@ -206,7 +206,8 @@ void ModeAutorotate::run()
 
             if(!hover_autorotation){ 
 			// Slowly change the target head speed until the target head speed matches the parameter defined value
-           if (g2.arot.get_rpm() > HEAD_SPEED_TARGET_RATIO*1.005f  ||  g2.arot.get_rpm() < HEAD_SPEED_TARGET_RATIO*0.995f) {
+           float norm_rpm = g2.arot.get_rpm()/g2.arot.get_hs_set_point();
+           if (norm_rpm > HEAD_SPEED_TARGET_RATIO*1.005f  ||  norm_rpm < HEAD_SPEED_TARGET_RATIO*0.995f) {
                 _target_head_speed -= _hs_decay*G_Dt;
             } else {
                 _target_head_speed = HEAD_SPEED_TARGET_RATIO;
