@@ -62,6 +62,7 @@ bool ModeAutorotate::init(bool ignore_checks)
 	initial_energy_check =1;
 	g2.arot._using_rfnd = false;
 	g2.arot._flare_complete = false;
+	g2.arot.init_avg_acc_z();
 	g2.arot.get_collective_minimum_drag(motors->get_coll_mid());
 
     // Setting default starting switches
@@ -294,6 +295,8 @@ void ModeAutorotate::run()
 			//store entry values for touchdown phase 
 		    g2.arot.set_entry_sink_rate(inertial_nav.get_velocity_z_up_cms());
 			g2.arot.set_entry_alt(g2.arot.get_ground_distance());
+			//calc average acceleration on z axis for estimating flare effectiveness
+			g2.arot.calc_avg_acc_z();
 
             break;
         }
