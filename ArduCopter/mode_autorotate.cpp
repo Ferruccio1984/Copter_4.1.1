@@ -62,6 +62,7 @@ bool ModeAutorotate::init(bool ignore_checks)
 	initial_energy_check =1;
 	g2.arot._using_rfnd = false;
 	g2.arot._flare_complete = false;
+	g2.arot.get_collective_minimum_drag(motors->get_coll_mid());
 
     // Setting default starting switches
     phase_switch = Autorotation_Phase::ENTRY;
@@ -212,7 +213,6 @@ void ModeAutorotate::run()
             } else {
                 _target_head_speed = HEAD_SPEED_TARGET_RATIO;
             }
-			  g2.arot.get_collective_minimum_drag(motors->get_coll_mid());
                // Set target head speed in head speed controller
                g2.arot.set_target_head_speed(_target_head_speed);
                // Run airspeed/attitude controller
