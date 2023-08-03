@@ -201,9 +201,6 @@ void AC_Autorotation::init_hs_controller()
 
     // Protect against divide by zero
     _param_head_speed_set_point.set(MAX(_param_head_speed_set_point,500));
-
-    _acc_z_sum = 0.0f;
-    _cnt = 0;
 	
 }
 
@@ -497,14 +494,6 @@ void AC_Autorotation::flare_controller()
 
 
 	 //estimate flare effectiveness
-	  if(_cnt<=10){
-	  	_acc_z_sum +=_ahrs.get_accel_ef().z;
-	  	_cnt++;
-	    }else{
-	    _avg_acc_z = _acc_z_sum/10.0f;
-	  	_acc_z_sum = 0.0f;
-	  	_cnt=0;
-	  	}
 
 	  if(_speed_forward <= (0.6*_flare_entry_speed) && _avg_acc_z>= -(1.1*9.80665f) ){
 		if(!_flare_complete){
@@ -516,7 +505,7 @@ void AC_Autorotation::flare_controller()
 	  if(!_flare_complete){
 		  _pitch_target = atanf(-_accel_out/(GRAVITY_MSS * 100.0f))*(18000.0f/M_PI);
 	  }else{
-		  _pitch_target = 0.0f;
+		  _pitch_target *= 0.95f;
 	  }
 
 
@@ -594,4 +583,25 @@ void AC_Autorotation::update_est_radar_alt()
     }
 }
 
+void AC_Autorotation::init_avg_acc_z()
+{
+	_avg_acc_z = 0.0f;
+	_acc_z_sum = 0.0f;
+	_index = 0;
+	memset(_curr_acc_z, 0, sizeof(_curr_acc_z));
+
+}
+
+void AC_Autorotation::calc_avg_acc_z()
+{
+	if(_index < 10){
+		_acc_z_sum -= _curr_acc_z[_index];
+	    _curr_acc_z[_index]= _ahrs.get_accel_ef().z;
+	    _acc_z_sum += _curr_acc_z[_index];
+	    _index = _index+1;
+	}else{
+		_index = 0;
+	}
+	_avg_acc_z = _acc_z_sum/10.0f;
+}
 

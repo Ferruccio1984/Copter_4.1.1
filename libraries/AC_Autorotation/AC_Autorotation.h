@@ -55,6 +55,8 @@ public:
     void init_est_radar_alt();
     void update_est_radar_alt();
     float get_est_alt() const {return _est_alt;}
+    void init_avg_acc_z();
+    void calc_avg_acc_z();
 
     // User Settable Parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -108,7 +110,8 @@ private:
     float _radar_alt_calc;
     float _avg_acc_z;
     float _acc_z_sum;
-    int16_t _cnt;
+    int16_t _index;
+    float _curr_acc_z[10]{};
 
 
     LowPassFilterFloat _accel_target_filter; // acceleration target filter
