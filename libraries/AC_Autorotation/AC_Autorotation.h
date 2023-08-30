@@ -19,6 +19,7 @@ public:
 
     //--------Functions--------
     void init_hs_controller(void);  // Initialise head speed controller
+    void estimate_flare_altitude(void);
 	void guided_input_safety_check();
     void init_fwd_spd_controller(void);  // Initialise forward speed controller
     bool update_hs_glide_controller(float dt);  // Update head speed controller
@@ -49,6 +50,9 @@ public:
 	void time_to_ground();
 	void set_collective_minimum_drag(float col_mid )const;
 	void get_collective_minimum_drag(float col_mid )  { _col_mid = col_mid; }
+	void get_collective_hover(float col_hover) {_col_hover = col_hover; }
+	void get_collective_max(float col_max) {_col_max = col_max; }
+	void get_collective_min(float col_min) {_col_min = col_min; }
     void set_entry_sink_rate (float sink_rate) { _entry_sink_rate = sink_rate; }
     void set_entry_alt (float entry_alt) { _entry_alt = entry_alt; }
 	void set_ground_clearance(float ground_clearance) { _ground_clearance = ground_clearance; }
@@ -112,6 +116,10 @@ private:
     float _acc_z_sum;
     int16_t _index;
     float _curr_acc_z[10]{};
+    float _col_hover;
+    float _col_max;
+    float _col_min;
+    float _col_hover_rad;
 
 
     LowPassFilterFloat _accel_target_filter; // acceleration target filter
@@ -128,6 +136,9 @@ private:
     AP_Float _param_bail_time;
     AP_Int8  _param_rpm_instance;
     AP_Float _param_fwd_k_ff;
+    AP_Float _param_j;
+    AP_Float _param_solidity;
+    AP_Float _param_diameter;
 
     //--------Internal Flags--------
     struct controller_flags {

@@ -6,6 +6,9 @@
 
 //Autorotation controller defaults
 #define AROT_BAIL_OUT_TIME                            2.0f     // Default time for bail out controller to run (unit: s)
+#define ROT_J                                        0.01f    // Rotor polar moment of inertia
+#define ROT_SOLIDITY                                 0.05f    // Main rotor solidity
+#define ROT_DIAMETER                                 1.25f    // Main rotor diameter
 
 // Head Speed (HS) controller specific default definitions
 #define HS_CONTROLLER_COLLECTIVE_CUTOFF_FREQ          2.0f     // low-pass filter on accel error (unit: hz)
@@ -162,6 +165,33 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("COL_FILT_C", 16, AC_Autorotation, _param_col_cushion_cutoff_freq, HS_CONTROLLER_CUSHION_COL_FILTER),
 
+    // @Param: ROT_J
+    // @DisplayName: polar moment of inertia
+    // @Description: helicopter specific main rotor moment of inertia
+    // @Units: Kg*m2
+    // @Range: 0.001 0.01
+    // @Increment: 0.001
+    // @User: Advanced
+    AP_GROUPINFO("ROT_J", 17, AC_Autorotation, _param_j, ROT_J),
+
+    // @Param: SOLIDITY
+    // @DisplayName: rotor solidity
+    // @Description: helicopter specific main rotor solidity
+    // @Units:
+    // @Range: 0.001 0.01
+    // @Increment: 0.001
+    // @User: Advanced
+    AP_GROUPINFO("ROT_SOL", 18, AC_Autorotation, _param_solidity, ROT_SOLIDITY),
+
+    // @Param: ROT_DIAM
+    // @DisplayName: rotor solidity
+    // @Description: helicopter specific main rotor solidity
+    // @Units:
+    // @Range: 0.001 0.01
+    // @Increment: 0.001
+    // @User: Advanced
+    AP_GROUPINFO("ROT_DIAM", 19, AC_Autorotation, _param_diameter, ROT_DIAMETER),
+
     AP_GROUPEND
 };
 
@@ -316,6 +346,29 @@ float AC_Autorotation::get_rpm(bool update_counter)
         }
     }
     return current_rpm;
+}
+
+void AC_Autorotation::estimate_flare_altitude()
+{
+    //estimate hover thrust based on collective hover setting
+	_col_hover_rad = radians(_col_min + (_col_max - _col_min)*_col_hover);
+	float b = _param_solidity*6.28f;
+	float lambda = (-(b/8.0f) + safe_sqrt((sq(b))/64.0f +((b/3.0f)*_col_hover_rad)))*0.5f;
+	float f=_param_head_speed_set_point/60.0f;
+	float tip_speed= f*6.28f*_param_diameter*0.5f;
+	float lift = ((1.225f*tip_speed*tip_speed*(_param_solidity*3.14*(_param_diameter*0.5f))*(_param_diameter*0.5f))*((_col_hover_rad/3.0f) - (lambda/2.0f))*6.28f)*0.5f;
+	gcs().send_text(MAV_SEVERITY_INFO, "Lift=%f N", lift);
+	gcs().send_text(MAV_SEVERITY_INFO, "Lambda=%f rad", lambda);
+
+	//estimate min rotor rpm allowable at the end of flare maneuver based on max collective parameter and a/c weight
+	float lambda_cushion = (-(b/8.0f) + safe_sqrt(sq(b)/64.0f +(b/3.0f)*(radians(_col_max))))*0.5f;
+	float tip_speed_min =safe_sqrt(lift/((1.225f*(_param_solidity*3.14*(_param_diameter*0.5f))*(_param_diameter*0.5f))*((radians(_col_max)/3.0f) - (lambda_cushion/2.0f))*6.28f*0.5f));
+	float _omega_min = tip_speed_min/(_param_diameter*0.5f);
+	float rpm_min = (_omega_min*60.0f)/6.28;
+	gcs().send_text(MAV_SEVERITY_INFO, "rpm_min=%f ", rpm_min);
+
+	//estimate available energy for touchdown
+	float e_available = 0.5*(_param_j)*(sq(6.28*f) - sq(_omega_min));
 }
 
 
