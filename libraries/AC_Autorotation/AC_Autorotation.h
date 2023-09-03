@@ -71,6 +71,7 @@ public:
 	AP_Int8  _param_guided;
     bool  _using_rfnd;
     bool _flare_complete;
+    bool  _flare_calc_complete;
 
 private:
 
@@ -120,6 +121,8 @@ private:
     float _col_max;
     float _col_min;
     float _col_hover_rad;
+    float _flare_alt_calc;
+
 
 
     LowPassFilterFloat _accel_target_filter; // acceleration target filter
