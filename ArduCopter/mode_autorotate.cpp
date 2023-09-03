@@ -62,8 +62,12 @@ bool ModeAutorotate::init(bool ignore_checks)
 	initial_energy_check =1;
 	g2.arot._using_rfnd = false;
 	g2.arot._flare_complete = false;
+	g2.arot._flare_calc_complete = false;
 	g2.arot.init_avg_acc_z();
 	g2.arot.get_collective_minimum_drag(motors->get_coll_mid());
+	g2.arot.get_collective_hover(motors->get_coll_hover());
+	g2.arot.get_collective_max(motors->get_coll_max_pitch());
+	g2.arot.get_collective_min(motors->get_coll_min_pitch());
 
     // Setting default starting switches
     phase_switch = Autorotation_Phase::ENTRY;
@@ -257,6 +261,7 @@ void ModeAutorotate::run()
             // Run airspeed/attitude controller
             g2.arot.set_dt(G_Dt);
             g2.arot.update_forward_speed_controller();
+            g2.arot.estimate_flare_altitude();
 
             // Retrieve pitch target 
             _pitch_target = g2.arot.get_pitch();
