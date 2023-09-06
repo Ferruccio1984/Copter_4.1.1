@@ -61,6 +61,9 @@ public:
     float get_est_alt() const {return _est_alt;}
     void init_avg_acc_z();
     void calc_avg_acc_z();
+    float get_flare_alt() const {return _flare_alt_calc;}
+    void update_flare_alt();
+    void calc_flare_alt(float sink_rate, float fwd_speed);
 
     // User Settable Parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -72,6 +75,7 @@ public:
     bool  _using_rfnd;
     bool _flare_complete;
     bool  _flare_calc_complete;
+    bool _flare_update_complete;
 
 private:
 
@@ -122,6 +126,8 @@ private:
     float _col_min;
     float _col_hover_rad;
     float _flare_alt_calc;
+    float _lift_hover;
+    float _c;
 
 
 
