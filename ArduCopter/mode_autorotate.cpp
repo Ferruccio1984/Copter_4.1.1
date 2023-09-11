@@ -63,6 +63,7 @@ bool ModeAutorotate::init(bool ignore_checks)
 	g2.arot._using_rfnd = false;
 	g2.arot._flare_complete = false;
 	g2.arot._flare_calc_complete = false;
+	g2.arot._flare_update_complete = false;
 	g2.arot.init_avg_acc_z();
 	g2.arot.get_collective_minimum_drag(motors->get_coll_mid());
 	g2.arot.get_collective_hover(motors->get_coll_hover());
@@ -150,6 +151,7 @@ void ModeAutorotate::run()
     }else {
 	time_to_impact = last_tti;	
 	}	
+    g2.arot.estimate_flare_altitude();
 
     //----------------------------------------------------------------
     //                  State machine logic
@@ -157,7 +159,7 @@ void ModeAutorotate::run()
 	
 	if(initial_energy_check){
 	//initial check for total energy monitoring
-	if ( inertial_nav.get_speed_xy_cms() < 250.0f && g2.arot.get_ground_distance() < g2.arot._param_flr_alt){
+	if ( inertial_nav.get_speed_xy_cms() < 250.0f && g2.arot.get_est_alt() < g2.arot.get_flare_alt()){
     		hover_autorotation = true;
     	}else{
     		hover_autorotation = false;
@@ -171,12 +173,12 @@ void ModeAutorotate::run()
 		phase_switch = Autorotation_Phase::TOUCH_DOWN;
 	    }
 	} else {
-		if ( _flags.ss_glide_initial == 1  && _flags.flare_initial == 1 && _flags.touch_down_initial == 1 && g2.arot.get_ground_distance() > g2.arot._param_flr_alt ){
+		if ( _flags.ss_glide_initial == 1  && _flags.flare_initial == 1 && _flags.touch_down_initial == 1 && g2.arot.get_est_alt() > g2.arot.get_flare_alt() ){
                  if ((now - _entry_time_start_ms)/1000.0f > AUTOROTATE_ENTRY_TIME )  {
                  // Flight phase can be progressed to steady state glide
                  phase_switch = Autorotation_Phase::SS_GLIDE;
                  }
-          }else if( time_to_impact > g2.arot._param_time_to_ground && g2.arot.get_est_alt() < g2.arot._param_flr_alt){
+          }else if( time_to_impact > g2.arot._param_time_to_ground && g2.arot.get_est_alt() < g2.arot.get_flare_alt()){
 		phase_switch = Autorotation_Phase::FLARE;
 	    }else if( time_to_impact <= g2.arot._param_time_to_ground ){
 			phase_switch = Autorotation_Phase::TOUCH_DOWN;
@@ -261,7 +263,6 @@ void ModeAutorotate::run()
             // Run airspeed/attitude controller
             g2.arot.set_dt(G_Dt);
             g2.arot.update_forward_speed_controller();
-            g2.arot.estimate_flare_altitude();
 
             // Retrieve pitch target 
             _pitch_target = g2.arot.get_pitch();
@@ -269,6 +270,7 @@ void ModeAutorotate::run()
             // Update head speed/ collective controller
             _flags.bad_rpm = g2.arot.update_hs_glide_controller(G_Dt); 
             // Attitude controller is updated in navigation switch-case statements
+            g2.arot.calc_avg_acc_z();
 
             break;
         }
@@ -277,6 +279,7 @@ void ModeAutorotate::run()
         {
             // Steady state glide functions to be run only once
             if (_flags.flare_initial == 1) {
+            	gcs().send_text(MAV_SEVERITY_INFO, "Flare_altitude_updated=%f", g2.arot.get_flare_alt()*0.01f);
                 gcs().send_text(MAV_SEVERITY_INFO, "Flare_Phase");
 
                 // Set following trim low pass cut off frequency
