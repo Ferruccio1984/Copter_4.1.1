@@ -63,13 +63,14 @@ bool ModeAutorotate::init(bool ignore_checks)
 	g2.arot._using_rfnd = false;
 	g2.arot._flare_complete = false;
 	g2.arot._flare_calc_complete = false;
+	g2.arot._flare_update_check = false;
 	g2.arot.init_avg_acc_z();
 	g2.arot.get_collective_minimum_drag(motors->get_coll_mid());
 	g2.arot.get_collective_hover(motors->get_coll_hover());
 	g2.arot.get_collective_max(motors->get_coll_max_pitch());
 	g2.arot.get_collective_min(motors->get_coll_min_pitch());
 	g2.arot.get_gov_rpm(motors->get_rpm_setpoint());
-	g2.arot.estimate_flare_altitude();
+	g2.arot.initial_flare_estimate();
 
     // Setting default starting switches
     phase_switch = Autorotation_Phase::ENTRY;
@@ -96,13 +97,11 @@ void ModeAutorotate::run()
     }
 
     float pilot_roll, pilot_pitch, pilot_yaw_rate;
-    if (g2.arot._param_guided == 1){
-        pilot_roll = guided_roll;				
-    } else {
-        // Operator is in control of roll and yaw.  Controls act as if in stabilise flight mode.  Pitch 
-        // is controlled by speed-height controller.	
-        get_pilot_desired_lean_angles(pilot_roll, pilot_pitch, copter.aparm.angle_max, copter.aparm.angle_max);						
-    }
+
+    // Operator is in control of roll and yaw.  Controls act as if in stabilise flight mode.  Pitch
+    // is controlled by speed-height controller.
+    get_pilot_desired_lean_angles(pilot_roll, pilot_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
+
 		
     float target_roll;
 
@@ -181,7 +180,7 @@ void ModeAutorotate::run()
                  }
           }else if( g2.arot.get_est_alt()<=g2.arot.get_flare_alt() && g2.arot.get_est_alt()>g2.arot.get_cushion_alt() ){
 		phase_switch = Autorotation_Phase::FLARE;
-	    }else if(g2.arot._flare_complete || g2.arot.get_est_alt()<=g2.arot.get_cushion_alt() ){
+	    }else if(g2.arot._flare_complete || g2.arot.get_ground_distance()<=g2.arot.get_cushion_alt() ){
 			phase_switch = Autorotation_Phase::TOUCH_DOWN;
         }			
 	}
@@ -280,7 +279,6 @@ void ModeAutorotate::run()
         {
             // Steady state glide functions to be run only once
             if (_flags.flare_initial == 1) {
-            	gcs().send_text(MAV_SEVERITY_INFO, "Flare_altitude_updated=%f", g2.arot.get_flare_alt()*0.01f);
                 gcs().send_text(MAV_SEVERITY_INFO, "Flare_Phase");
 
                 // Set following trim low pass cut off frequency

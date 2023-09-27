@@ -19,8 +19,7 @@ public:
 
     //--------Functions--------
     void init_hs_controller(void);  // Initialise head speed controller
-    void estimate_flare_altitude(void);
-	void guided_input_safety_check();
+    void initial_flare_estimate(void);
     void init_fwd_spd_controller(void);  // Initialise forward speed controller
     bool update_hs_glide_controller(float dt);  // Update head speed controller
     float get_rpm(void) const { return _current_rpm; }  // Function just returns the rpm as last read in this library
@@ -53,6 +52,7 @@ public:
 	void get_collective_hover(float col_hover) {_col_hover = col_hover; }
 	void get_collective_max(float col_max) {_col_max = col_max; }
 	void get_collective_min(float col_min) {_col_min = col_min; }
+	void get_gov_rpm(float gov_rpm) {_governed_rpm = gov_rpm; }
     void set_entry_sink_rate (float sink_rate) { _entry_sink_rate = sink_rate; }
     void set_entry_alt (float entry_alt) { _entry_alt = entry_alt; }
 	void set_ground_clearance(float ground_clearance) { _ground_clearance = ground_clearance; }
@@ -64,18 +64,21 @@ public:
     float get_flare_alt() const {return _flare_alt_calc;}
     void update_flare_alt();
     void calc_flare_alt(float sink_rate, float fwd_speed);
+    float get_t_touchdown() const {return _t_tch;}
+    float get_cushion_alt() const {return _cushion_alt;}
+    void adjust_headspeed_target();
 
     // User Settable Parameters
     static const struct AP_Param::GroupInfo var_info[];
 	AP_Int16 _param_target_speed;
-	AP_Float _param_flr_alt;
-	AP_Float _param_time_to_ground;
 	AP_Int16 _param_head_speed_set_point;	
-	AP_Int8  _param_guided;
+	AP_Float _param_solidity;
+	AP_Float _param_diameter;
+	AP_Float _t_tch;
     bool  _using_rfnd;
-    bool _flare_complete;
+    bool  _flare_complete;
     bool  _flare_calc_complete;
-    bool _flare_update_complete;
+    bool  _flare_update_check;
 
 private:
 
@@ -128,8 +131,17 @@ private:
     float _flare_alt_calc;
     float _lift_hover;
     float _c;
-
-
+    uint32_t t_hscheck_start;
+    float _governed_rpm;
+    float _cushion_alt;
+    float _desired_headspeed;
+    float _last_des_headspeed;
+    bool  _headspeed_check;
+    bool  _headspeed_updated;
+    float _disc_area;
+    float _last_vertical_speed;
+    float _sink_deriv;
+    float _est_rod;
 
     LowPassFilterFloat _accel_target_filter; // acceleration target filter
 
@@ -145,9 +157,7 @@ private:
     AP_Float _param_bail_time;
     AP_Int8  _param_rpm_instance;
     AP_Float _param_fwd_k_ff;
-    AP_Float _param_j;
-    AP_Float _param_solidity;
-    AP_Float _param_diameter;
+
 
     //--------Internal Flags--------
     struct controller_flags {
