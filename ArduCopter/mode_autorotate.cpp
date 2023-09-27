@@ -63,12 +63,13 @@ bool ModeAutorotate::init(bool ignore_checks)
 	g2.arot._using_rfnd = false;
 	g2.arot._flare_complete = false;
 	g2.arot._flare_calc_complete = false;
-	g2.arot._flare_update_complete = false;
 	g2.arot.init_avg_acc_z();
 	g2.arot.get_collective_minimum_drag(motors->get_coll_mid());
 	g2.arot.get_collective_hover(motors->get_coll_hover());
 	g2.arot.get_collective_max(motors->get_coll_max_pitch());
 	g2.arot.get_collective_min(motors->get_coll_min_pitch());
+	g2.arot.get_gov_rpm(motors->get_rpm_setpoint());
+	g2.arot.estimate_flare_altitude();
 
     // Setting default starting switches
     phase_switch = Autorotation_Phase::ENTRY;
@@ -151,7 +152,7 @@ void ModeAutorotate::run()
     }else {
 	time_to_impact = last_tti;	
 	}	
-    g2.arot.estimate_flare_altitude();
+
 
     //----------------------------------------------------------------
     //                  State machine logic
@@ -159,7 +160,7 @@ void ModeAutorotate::run()
 	
 	if(initial_energy_check){
 	//initial check for total energy monitoring
-	if ( inertial_nav.get_speed_xy_cms() < 250.0f && g2.arot.get_est_alt() < g2.arot.get_flare_alt()){
+	if ( inertial_nav.get_speed_xy_cms() < 250.0f && g2.arot.get_ground_distance() < g2.arot.get_flare_alt()){
     		hover_autorotation = true;
     	}else{
     		hover_autorotation = false;
@@ -169,7 +170,7 @@ void ModeAutorotate::run()
 
      //total energy check     
     if(hover_autorotation){
-		if(_flags.entry_initial == 0  && time_to_impact <= g2.arot._param_time_to_ground){
+		if(_flags.entry_initial == 0  && time_to_impact <= g2.arot.get_t_touchdown()){
 		phase_switch = Autorotation_Phase::TOUCH_DOWN;
 	    }
 	} else {
@@ -178,9 +179,9 @@ void ModeAutorotate::run()
                  // Flight phase can be progressed to steady state glide
                  phase_switch = Autorotation_Phase::SS_GLIDE;
                  }
-          }else if( time_to_impact > g2.arot._param_time_to_ground && g2.arot.get_est_alt() < g2.arot.get_flare_alt()){
+          }else if( g2.arot.get_est_alt()<=g2.arot.get_flare_alt() && g2.arot.get_est_alt()>g2.arot.get_cushion_alt() ){
 		phase_switch = Autorotation_Phase::FLARE;
-	    }else if( time_to_impact <= g2.arot._param_time_to_ground ){
+	    }else if(g2.arot._flare_complete || g2.arot.get_est_alt()<=g2.arot.get_cushion_alt() ){
 			phase_switch = Autorotation_Phase::TOUCH_DOWN;
         }			
 	}
@@ -300,9 +301,7 @@ void ModeAutorotate::run()
             _flags.bad_rpm = g2.arot.update_hs_glide_controller(G_Dt);
             // Retrieve pitch target 
             _pitch_target = g2.arot.get_pitch();
-			//store entry values for touchdown phase 
-		    g2.arot.set_entry_sink_rate(inertial_nav.get_velocity_z_up_cms());
-			g2.arot.set_entry_alt(g2.arot.get_ground_distance());
+
 			//calc average acceleration on z axis for estimating flare effectiveness
 			g2.arot.calc_avg_acc_z();
 
@@ -316,6 +315,8 @@ void ModeAutorotate::run()
                 _flags.touch_down_initial = 0;
                 _touchdown_time_ms = millis();
 				g2.arot.set_col_cutoff_freq(g2.arot.get_col_cushion_freq());
+				g2.arot.set_entry_sink_rate(inertial_nav.get_velocity_z_up_cms());
+				g2.arot.set_entry_alt(g2.arot.get_ground_distance());
 				g2.arot.set_ground_clearance(copter.rangefinder.ground_clearance_cm_orient(ROTATION_PITCH_270));
             }
             g2.arot.set_dt(G_Dt);
