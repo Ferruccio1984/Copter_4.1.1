@@ -87,6 +87,9 @@ public:
     // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
     float get_rsc_setpoint() const { return _main_rotor._rsc_setpoint.get() * 0.01f; }
 
+    //return governor rpm setpoint
+    float get_rpm_setpoint() const {return _main_rotor.get_governor_setpoint();}
+
     // arot_man_enabled - gets contents of manual_autorotation_enabled parameter
     bool arot_man_enabled() const { return (_main_rotor._rsc_arot_man_enable.get() == 1) ? true : false; }
 
