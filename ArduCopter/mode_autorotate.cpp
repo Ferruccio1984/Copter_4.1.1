@@ -61,9 +61,6 @@ bool ModeAutorotate::init(bool ignore_checks)
     _msg_flags.bad_rpm = true;
 	initial_energy_check =1;
 	g2.arot._using_rfnd = false;
-	g2.arot._flare_complete = false;
-	g2.arot._flare_calc_complete = false;
-	g2.arot._flare_update_check = false;
 	g2.arot.init_avg_acc_z();
 	g2.arot.get_collective_minimum_drag(motors->get_coll_mid());
 	g2.arot.get_collective_hover(motors->get_coll_hover());
@@ -178,7 +175,7 @@ void ModeAutorotate::run()
                  // Flight phase can be progressed to steady state glide
                  phase_switch = Autorotation_Phase::SS_GLIDE;
                  }
-          }else if( g2.arot.get_est_alt()<=g2.arot.get_flare_alt() && g2.arot.get_est_alt()>g2.arot.get_cushion_alt() && !g2.arot._flare_complete ){
+          }else if( g2.arot.get_est_alt()<=g2.arot.get_flare_alt() && g2.arot.get_est_alt()>g2.arot.get_cushion_alt() && !g2.arot.get_flare_status() ){
 		phase_switch = Autorotation_Phase::FLARE;
 	    }else if(time_to_impact <= g2.arot.get_t_touchdown() && _flags.flare_initial == 0 ){
 			phase_switch = Autorotation_Phase::TOUCH_DOWN;
@@ -232,7 +229,7 @@ void ModeAutorotate::run()
                 }else{
             	_pitch_target = 0.0f;
             	g2.arot.set_collective_minimum_drag(motors->get_coll_mid());
-				g2.arot.set_entry_sink_rate(inertial_nav.get_velocity_z_up_cms());
+				g2.arot.set_entry_sink_rate(curr_vel_z);
 				g2.arot.set_entry_alt(g2.arot.get_ground_distance());
             }
 
@@ -322,7 +319,7 @@ void ModeAutorotate::run()
                 _flags.touch_down_initial = 0;
                 _touchdown_time_ms = millis();
 				g2.arot.set_col_cutoff_freq(g2.arot.get_col_cushion_freq());
-				g2.arot.set_entry_sink_rate(inertial_nav.get_velocity_z_up_cms());
+				g2.arot.set_entry_sink_rate(curr_vel_z);
 				g2.arot.set_entry_alt(g2.arot.get_ground_distance());
 				g2.arot.set_ground_clearance(copter.rangefinder.ground_clearance_cm_orient(ROTATION_PITCH_270));
             }

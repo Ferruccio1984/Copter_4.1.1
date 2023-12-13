@@ -66,7 +66,8 @@ public:
     void calc_flare_alt(float sink_rate, float fwd_speed);
     float get_t_touchdown() const {return _t_tch;}
     float get_cushion_alt() const {return _cushion_alt;}
-    void adjust_headspeed_target();
+    bool  get_flare_status(void) { return _flare_complete; }
+    void calc_sink_d_avg();
 
     // User Settable Parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -76,9 +77,6 @@ public:
 	AP_Float _param_diameter;
 	AP_Float _t_tch;
     bool  _using_rfnd;
-    bool  _flare_complete;
-    bool  _flare_calc_complete;
-    bool  _flare_update_check;
 
 private:
 
@@ -112,7 +110,6 @@ private:
     float _flare_entry_speed;
     float _desired_speed;
     float _time_to_ground;
-    float _distance_to_ground;
     float _desired_sink_rate;
     float _col_mid;
     float _ground_clearance;
@@ -127,21 +124,21 @@ private:
     float _col_hover;
     float _col_max;
     float _col_min;
-    float _col_hover_rad;
     float _flare_alt_calc;
     float _lift_hover;
     float _c;
-    uint32_t t_hscheck_start;
     float _governed_rpm;
     float _cushion_alt;
-    float _desired_headspeed;
-    float _last_des_headspeed;
-    bool  _headspeed_check;
-    bool  _headspeed_updated;
     float _disc_area;
     float _last_vertical_speed;
     float _sink_deriv;
     float _est_rod;
+    float _avg_sink_deriv;
+    float _avg_sink_deriv_sum;
+    int16_t _index_sink_rate;
+    float _curr_sink_deriv[20]{};
+    bool  _flare_complete;
+    bool  _flare_update_check;
 
     LowPassFilterFloat _accel_target_filter; // acceleration target filter
 

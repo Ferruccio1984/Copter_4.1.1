@@ -22,9 +22,10 @@
 #define AP_FW_VEL_P                       0.9f
 #define TCH_P                                    0.1f
 #define AP_FW_VEL_FF                      0.15f
-#define AP_FLARE_ALT                      800
+
+// flare controller default definitions
+#define AP_ALPHA_TPP                         20.0f
 #define AP_T_TO_G                            0.55f
-#define GUIDED                                   0
 
 
 const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
@@ -199,8 +200,6 @@ void AC_Autorotation::init_hs_controller()
 
     // Protect against divide by zero
     _param_head_speed_set_point.set(MAX(_param_head_speed_set_point,500));
-    _desired_headspeed= _param_head_speed_set_point;
-    _last_des_headspeed=_desired_headspeed;
 
 }
 
@@ -216,7 +215,7 @@ bool AC_Autorotation::update_hs_glide_controller(float dt)
 
     if (_unhealthy_rpm_counter <=30) {
         // Normalised head speed
-        float head_speed_norm = _current_rpm / _desired_headspeed;
+        float head_speed_norm = _current_rpm / _param_head_speed_set_point;
 
         // Set collective trim low pass filter cut off frequency
         col_trim_lpf.set_cutoff_frequency(_col_cutoff_freq);
@@ -242,6 +241,7 @@ bool AC_Autorotation::update_hs_glide_controller(float dt)
 
     // Send collective to setting to motors output library
     set_collective(HS_CONTROLLER_COLLECTIVE_CUTOFF_FREQ);
+	
 
     return _flags.bad_rpm_warning;
 }
@@ -320,50 +320,42 @@ float AC_Autorotation::get_rpm(bool update_counter)
 
 void AC_Autorotation::initial_flare_estimate()
 {
-	if(!_flare_calc_complete){
+	//estimate hover thrust
+	float _col_hover_rad = radians(_col_min + (_col_max - _col_min)*_col_hover);
+	float b = _param_solidity*6.28f;
+	_disc_area=3.14*sq(_param_diameter*0.5f);
+	float lambda = (-(b/8.0f) + safe_sqrt((sq(b))/64.0f +((b/3.0f)*_col_hover_rad)))*0.5f;
+	float freq=_governed_rpm/60.0f;
+	float tip_speed= freq*6.28f*_param_diameter*0.5f;
+	_lift_hover = ((1.225f*sq(tip_speed)*(_param_solidity*_disc_area))*((_col_hover_rad/3.0f) - (lambda/2.0f))*5.8f)*0.5f;
 
-	     //estimate hover thrust
-		_col_hover_rad = radians(_col_min + (_col_max - _col_min)*_col_hover);
-		float b = _param_solidity*6.28f;
-		_disc_area=3.14*sq(_param_diameter*0.5f);
-		float lambda = (-(b/8.0f) + safe_sqrt((sq(b))/64.0f +((b/3.0f)*_col_hover_rad)))*0.5f;
-		float freq=_governed_rpm/60.0f;
-		float tip_speed= freq*6.28f*_param_diameter*0.5f;
-		_lift_hover = ((1.225f*sq(tip_speed)*(_param_solidity*_disc_area))*((_col_hover_rad/3.0f) - (lambda/2.0f))*5.8f)*0.5f;
+	//estimate rate of descent
+	float omega_auto=(_param_head_speed_set_point/60.0f)*6.28f;
+	float tip_speed_auto = omega_auto*_param_diameter*0.5f;
+	float c_t = _lift_hover/(0.6125f*_disc_area*sq(tip_speed));
+	_est_rod=((0.25f*(_param_solidity*0.011f/c_t)*tip_speed_auto)+((sq(c_t)/(_param_solidity*0.011f))*tip_speed_auto));
 
-		//estimate rate of descent
-		float omega_auto=(_param_head_speed_set_point/60.0f)*6.28f;
-		float tip_speed_auto = omega_auto*_param_diameter*0.5f;
-	    float c_t = _lift_hover/(0.6125f*_disc_area*sq(tip_speed));
-	    _est_rod=((0.25f*(_param_solidity*0.011f/c_t)*tip_speed_auto)+((sq(c_t)/(_param_solidity*0.011f))*tip_speed_auto));
+	//estimate rotor C_d
+	_c=(_lift_hover/(sq(_est_rod)*0.5f*1.225f*_disc_area))*1.15f;
+	_c=constrain_float(_c, 0.7f, 1.4f);
 
-	    //estimate rotor C_d
-	    _c=(_lift_hover/(sq(_est_rod)*0.5f*1.225f*_disc_area))*1.15f;
-	    _c=constrain_float(_c, 0.7f, 1.4f);
+    //calc flare altitude
+	float des_spd_fwd=_param_target_speed*0.01f;
+	calc_flare_alt(-_est_rod,des_spd_fwd);
 
-        //calc flare altitude
-	    float des_spd_fwd=_param_target_speed*0.01f;
-	    calc_flare_alt(-_est_rod,des_spd_fwd);
+	//initialize sink rate monitor and flare bools
+	 _flare_complete = false;
+	 _flare_update_check = false;
+	 _avg_sink_deriv = 0.0f;
+	 _avg_sink_deriv_sum = 0.0f;
+	 _index_sink_rate = 0;
+	 memset(_curr_sink_deriv, 0, sizeof(_curr_sink_deriv));
 
-		_flare_calc_complete = true;
-		gcs().send_text(MAV_SEVERITY_INFO, "RofD=%f ", -_est_rod);
-		gcs().send_text(MAV_SEVERITY_INFO, "Ct/sigma=%f ", c_t/_param_solidity);
-		gcs().send_text(MAV_SEVERITY_INFO, "est_mass=%f ", _lift_hover/9.8065f);
-		gcs().send_text(MAV_SEVERITY_INFO, "flare_alt_est=%f ", _flare_alt_calc*0.01f);
-		gcs().send_text(MAV_SEVERITY_INFO, "Cushion_alt_est=%f", _cushion_alt*0.01f);
-		gcs().send_text(MAV_SEVERITY_INFO, "C=%f ", _c);
-     }
+	gcs().send_text(MAV_SEVERITY_INFO, "Ct/σ=%f W=%f kg flare_alt=%f C=%f", c_t/_param_solidity, _lift_hover/9.8065f, _flare_alt_calc*0.01f, _c);
+
 }
 
-void AC_Autorotation::update_flare_alt()
-{
-	float vel_z=_inav.get_velocity_z_up_cms()*0.01f;
-	float spd_fwd=_speed_forward*0.01f;
-	calc_flare_alt(vel_z,spd_fwd);
-	_flare_update_check = true;
-	gcs().send_text(MAV_SEVERITY_INFO, "Flare_alt_updated=%f",  _flare_alt_calc*0.01f);
-	gcs().send_text(MAV_SEVERITY_INFO, "Cushion_alt_updated=%f", _cushion_alt*0.01f);
-}
+
 
 void AC_Autorotation::calc_flare_alt(float sink_rate, float fwd_speed)
 {
@@ -371,12 +363,12 @@ void AC_Autorotation::calc_flare_alt(float sink_rate, float fwd_speed)
 	float speed_module=norm(sink_rate,fwd_speed);
 	float glide_angle=safe_asin(3.14/2-(fwd_speed/speed_module));
 
-	//estimate upwind at beginning flare
-	float flr_v_up= -speed_module*sinf(glide_angle+radians(20));
+	//estimate inflow velocity at beginning of flare
+	float inflow= -speed_module*sinf(glide_angle+radians(AP_ALPHA_TPP));
 
 	//estimate flare duration
 	float k_1=fabsf((-sink_rate+0.001f-safe_sqrt(_lift_hover/_c))/(-sink_rate+0.001f+safe_sqrt(_lift_hover/_c)));
-	float k_2=fabsf((flr_v_up-safe_sqrt(_lift_hover/_c))/(flr_v_up+safe_sqrt(_lift_hover/_c)));
+	float k_2=fabsf((inflow-safe_sqrt(_lift_hover/_c))/(inflow+safe_sqrt(_lift_hover/_c)));
 	float delta_t_flare=(0.5f*(_lift_hover/(9.8065*_c))*safe_sqrt(_c/_lift_hover)*logf(k_1))-(0.5f*(_lift_hover/(9.8065*_c))*safe_sqrt(_c/_lift_hover)*logf(k_2));
 
 	//estimate flare delta altitude
@@ -384,12 +376,12 @@ void AC_Autorotation::calc_flare_alt(float sink_rate, float fwd_speed)
 	float x=1-exp(a);
 	float s=1-exp((2*safe_sqrt(_c*9.8065/(_lift_hover/9.8065)))*(0.5f*(_lift_hover/(9.8065*_c))*safe_sqrt(_c/_lift_hover)*logf(k_1)));
 	float d=safe_sqrt(_lift_hover/_c);
-	float delta=((2*d/(2*safe_sqrt(_c*9.8065/(_lift_hover/9.8065))))*(a-logf(fabsf(x))-(2*safe_sqrt(_c*9.8065/(_lift_hover/9.8065)))*(0.5f*(_lift_hover/(9.8065*_c))*safe_sqrt(_c/_lift_hover)*logf(k_1)) +logf(fabsf(s))))-d*delta_t_flare;
-	float delta_h= -delta*cosf(radians(20));
+	float flare_distance=((2*d/(2*safe_sqrt(_c*9.8065/(_lift_hover/9.8065))))*(a-logf(fabsf(x))-(2*safe_sqrt(_c*9.8065/(_lift_hover/9.8065)))*(0.5f*(_lift_hover/(9.8065*_c))*safe_sqrt(_c/_lift_hover)*logf(k_1)) +logf(fabsf(s))))-d*delta_t_flare;
+	float delta_h= -flare_distance*cosf(radians(AP_ALPHA_TPP));
 
 	//estimate altitude to begin collective pull
-	_cushion_alt = (-(sink_rate*cosf(radians(20)))*_t_tch)*100.0f;
-
+    _cushion_alt = (-(sink_rate*cosf(radians(AP_ALPHA_TPP)))*_t_tch)*100.0f;
+	gcs().send_text(MAV_SEVERITY_INFO, "vs_final_est=%f ", sink_rate*cosf(radians(20)));
 	//total delta altitude to ground
 	_flare_alt_calc = _cushion_alt+delta_h*100.0f;
 }
@@ -512,41 +504,46 @@ void AC_Autorotation::update_forward_speed_controller(void)
     }
     _accel_out_last = _accel_out;
 
-    // update angle targets that will be passed to stabilize controller
-    _pitch_target = accel_to_angle(-_accel_out*0.01) * 100;
-
-    float vertical_speed = _inav.get_velocity_z_up_cms();
-    _sink_deriv= ((vertical_speed - _last_vertical_speed)*0.01f)/_dt;
-    _last_vertical_speed = vertical_speed;
-    float delta_v_z = fabsf(vertical_speed*0.01f+_est_rod);
-
-    if(_speed_forward >= 0.8f*_param_target_speed && delta_v_z<=2 && _sink_deriv<= 0.001f )
-    {
-        if(!_flare_update_check){
-            update_flare_alt();
-        }
-
-    	if(_collective_out<=0.1f && !_headspeed_check){
-    		t_hscheck_start=AP_HAL::millis();
-    		_headspeed_check = true;
-    		_headspeed_updated = false;
-    	}
-    	uint32_t now=AP_HAL::millis();
-    	if (now-t_hscheck_start >= 1000 && !_headspeed_updated){
-    		adjust_headspeed_target();
-    		_headspeed_check=false;
-    	}
+    if (_est_alt >= _flare_alt_calc*1.25f){
+    	_pitch_target = accel_to_angle(-_accel_out*0.01) * 100;
+    }else{
+    	_pitch_target = 0.0f;
     }
-
 }
 
-void AC_Autorotation::adjust_headspeed_target()
+void AC_Autorotation::calc_sink_d_avg()
 {
-	_desired_headspeed=_last_des_headspeed - 20.0f;
-	_desired_headspeed = constrain_float(_desired_headspeed, 0.8f*_param_head_speed_set_point, _param_head_speed_set_point);
-	_last_des_headspeed = _desired_headspeed;
-	_headspeed_updated = true;
-	gcs().send_text(MAV_SEVERITY_INFO, "optimizing_headspeed=%f rpm", _last_des_headspeed);
+	float vertical_speed = _inav.get_velocity_z_up_cms();
+	_sink_deriv= ((vertical_speed - _last_vertical_speed)*0.01f)/_dt;
+	_last_vertical_speed = vertical_speed;
+
+	if(_index_sink_rate < 20){
+	  	_avg_sink_deriv_sum -= _curr_sink_deriv[_index_sink_rate];
+	   	_curr_sink_deriv[_index_sink_rate]= _sink_deriv;
+	   	_avg_sink_deriv_sum += _curr_sink_deriv[_index_sink_rate];
+	   	_index_sink_rate = _index_sink_rate+1;
+	   	}else{
+		_index_sink_rate = 0;
+	}
+	_avg_sink_deriv = _avg_sink_deriv_sum/20.0f;
+	_avg_sink_deriv = constrain_float( _avg_sink_deriv, -10.0f,10.0f);
+}
+
+void AC_Autorotation::update_flare_alt()
+{
+     if(!_flare_update_check){
+		float delta_v_z = fabsf((_inav.get_velocity_z_up_cms())*0.01f+_est_rod);
+
+		if(_speed_forward >= 0.8f*_param_target_speed && delta_v_z<=1 && fabsf(_avg_sink_deriv)<=0.005 ){
+		    float vel_z=_inav.get_velocity_z_up_cms()*0.01f;
+		    float spd_fwd=_speed_forward*0.01f;
+		    _c=(_lift_hover/(sq(vel_z)*0.5f*1.225f*_disc_area))*1.15f;
+		    _c=constrain_float(_c, 0.7f, 1.4f);
+		    calc_flare_alt(vel_z,spd_fwd);
+		    _flare_update_check = true;
+		    gcs().send_text(MAV_SEVERITY_INFO, "Flare_alt_updated=%f C_updated=%f",  _flare_alt_calc*0.01f, _c);
+		}
+     }
 }
 
 
@@ -603,7 +600,7 @@ void AC_Autorotation::flare_controller()
 
 	 //estimate flare effectiveness
 
-	  if(_speed_forward <= (0.4*_flare_entry_speed) && _avg_acc_z>= -(1.1*9.80665f) ){
+	  if(_speed_forward <= (0.6*_flare_entry_speed) && fabsf(_avg_sink_deriv)<=0.005f && _avg_acc_z>= -(1.1*9.80665f) ){
 		if(!_flare_complete){
 			_flare_complete = true;
 			gcs().send_text(MAV_SEVERITY_INFO, "Flare_complete");
@@ -612,6 +609,7 @@ void AC_Autorotation::flare_controller()
 
 	  if(!_flare_complete){
 		  _pitch_target = atanf(-_accel_out/(GRAVITY_MSS * 100.0f))*(18000.0f/M_PI);
+		  _pitch_target = constrain_float(_pitch_target, 0.0f, AP_ALPHA_TPP*100.0f);
 	  }else{
 		  _pitch_target *= 0.95f;
 	  }
@@ -622,8 +620,8 @@ void AC_Autorotation::flare_controller()
 void AC_Autorotation::touchdown_controller()
 {
 	    float _current_sink_rate = _inav.get_velocity_z_up_cms();
-	     if(_est_alt>=_ground_clearance){
-	             _desired_sink_rate = linear_interpolate(0.0f, _entry_sink_rate, _est_alt, _ground_clearance, _cushion_alt);
+	     if(_radar_alt>=_ground_clearance){
+	             _desired_sink_rate = linear_interpolate(0.0f, _entry_sink_rate, _radar_alt, _ground_clearance, _entry_alt);
 	    }else{
 	            _desired_sink_rate = 0.0f;
 	    }
@@ -643,7 +641,7 @@ void AC_Autorotation::get_entry_speed()
 void AC_Autorotation::time_to_ground()		
 {
    if(_inav.get_velocity_z_up_cms() < 0.0f ) {
-			_time_to_ground = -(_est_alt/_inav.get_velocity_z_up_cms());
+			_time_to_ground = -(_radar_alt/_inav.get_velocity_z_up_cms());
    }
 }	
 
