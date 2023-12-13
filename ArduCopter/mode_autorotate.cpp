@@ -178,9 +178,9 @@ void ModeAutorotate::run()
                  // Flight phase can be progressed to steady state glide
                  phase_switch = Autorotation_Phase::SS_GLIDE;
                  }
-          }else if( g2.arot.get_est_alt()<=g2.arot.get_flare_alt() && g2.arot.get_est_alt()>g2.arot.get_cushion_alt() ){
+          }else if( g2.arot.get_est_alt()<=g2.arot.get_flare_alt() && g2.arot.get_est_alt()>g2.arot.get_cushion_alt() && !g2.arot._flare_complete ){
 		phase_switch = Autorotation_Phase::FLARE;
-	    }else if(g2.arot._flare_complete || g2.arot.get_ground_distance()<=g2.arot.get_cushion_alt() ){
+	    }else if(time_to_impact <= g2.arot.get_t_touchdown() && _flags.flare_initial == 0 ){
 			phase_switch = Autorotation_Phase::TOUCH_DOWN;
         }			
 	}
@@ -264,6 +264,12 @@ void ModeAutorotate::run()
             g2.arot.set_dt(G_Dt);
             g2.arot.update_forward_speed_controller();
 
+            //update sink rate derivative
+            g2.arot.calc_sink_d_avg();
+
+            //update flare altitude estimate
+            g2.arot.update_flare_alt();
+
             // Retrieve pitch target 
             _pitch_target = g2.arot.get_pitch();
 
@@ -291,10 +297,13 @@ void ModeAutorotate::run()
                 // Prevent running the initial flare functions again
                 _flags.flare_initial = 0;
             }
-           
             // Run flare controller
             g2.arot.set_dt(G_Dt);
             g2.arot.flare_controller();
+
+            //update sink rate derivative
+            g2.arot.calc_sink_d_avg();
+
 			// Update head speed/ collective controller
             _flags.bad_rpm = g2.arot.update_hs_glide_controller(G_Dt);
             // Retrieve pitch target 
