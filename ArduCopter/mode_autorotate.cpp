@@ -101,6 +101,7 @@ void ModeAutorotate::run()
     // Initialise internal variables
     float curr_vel_z = inertial_nav.get_velocity_z_up_cms();   // Current vertical descent
     //calculate time to impact
+    float time_to_impact;
     if (phase_switch != Autorotation_Phase::TOUCH_DOWN) {
         g2.arot.time_to_ground();
         time_to_impact = g2.arot.get_time_to_ground();
